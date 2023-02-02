@@ -85,16 +85,6 @@ const editUser = (req, res) => {
 
 const followUser = (req, res) => {
     const params = req.body;
-    // Editamos usuario con el follow actualizado 
-    User.findByIdAndUpdate(req.params.id, params.followers, { new: true }, (error, data) => {
-        if (error || !data) {
-            return res.status(400).json({
-                status: "error",
-                response: false,
-                mensaje: "No se ha encontrado el usuario al que editar los seguidos"
-            })
-        }
-    });
 
     // Editar usuario que RECIVE el follow
     User.findById(params.follow.userId, (error, data) => {
@@ -123,21 +113,49 @@ const followUser = (req, res) => {
                     mensaje: "No se ha seguido el usuario"
                 })
             }
+        })
+        // Editamos usuario con el follow actualizado 
+        User.findByIdAndUpdate(req.params.id, params.followers, { new: true }, (error, data) => {
+            if (error || !data) {
+                return res.status(400).json({
+                    status: "error",
+                    response: false,
+                    mensaje: "No se ha encontrado el usuario al que editar los seguidos"
+                })
+            }
             return res.status(200).json({
                 status: "success",
-                info: data,
+                user: data,
                 response: true,
                 mensaje: "El usuario se ha seguido correctamente"
             })
-        })
+        });
     }
     )
 }
 
 const unFollow = (req, res) => {
     const body = req.body;
-    
-    console.log(body);
+
+    User.findById(body.artistUserId, (error, data) => {
+        if (error || !data) {
+            return res.status(400).json({
+                status: "error",
+                response: false,
+                mensaje: "Hay un error al buscar el usuario"
+            })
+        }
+
+        User.findByIdAndUpdate(data._id, { $set: { followers: data.followers.filter(e => e.idUser !== body.idLogged) } }, { new: true }, (error, data) => {
+            if (error || !data) {
+                return res.status(400).json({
+                    status: "error",
+                    response: false,
+                    mensaje: "Hay un error al unfollow el usuario"
+                })
+            }
+        });
+    })
 
     User.findById(body.idLogged, (error, data) => {
         if (error || !data) {
@@ -147,22 +165,15 @@ const unFollow = (req, res) => {
                 mensaje: "Hay un error al buscar el usuario"
             })
         }
-        User.findByIdAndUpdate(body.idLogged, {$set: { follows: [data.follows.filter(e => e._id !== body.idArtist)] }}, { new: true }, (error, data) => {
-            console.log(data);
-        });
-    })
-    User.findById(body.artistUserId, (error, data) => {
-        if (error || !data) {
-            return res.status(400).json({
-                status: "error",
-                response: false,
-                mensaje: "Hay un error al buscar el usuario"
+        User.findByIdAndUpdate(body.idLogged, { $set: { follows: data.follows.filter(e => e._id !== body.idArtist) } }, { new: true }, (error, data) => {
+            return res.status(200).json({
+                status: "success",
+                user: data,
+                response: true,
+                mensaje: "El usuario se ha dejado de seguir correctamente"
             })
-        }
-        User.findByIdAndUpdate(data._id, {$set: { followers: [data.followers.filter(e => e._id !== body.idLogged)] }}, { new: true }, (error, data) => {
-            console.log(data);
         });
-    })
+    });
 }
 
 
